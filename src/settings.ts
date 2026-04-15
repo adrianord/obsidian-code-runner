@@ -133,7 +133,9 @@ export class CodeRunnerSettingTab extends PluginSettingTab {
         const parsed = JSON.parse(presetsField.value) as RunnerSettings["executorPresets"];
         this.plugin.settings.executorPresets = parsed;
         presetsError.setText("");
+        this.plugin.ensureCodeBlockProcessors();
         await this.plugin.savePluginData();
+        this.plugin.requestRefresh();
       } catch (error) {
         presetsError.setText(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
       }

@@ -12,6 +12,7 @@ export default class CodeRunnerPlugin extends Plugin {
   executionManager = new ExecutionManager(this, this.outputStore);
   private readonly refreshCallbacks = new Set<() => void>();
   private readonly collapsedBlocks = new Set<string>();
+  private readonly registeredProcessorLanguages = new Set<string>();
   private persistTimeout: number | null = null;
 
   async onload(): Promise<void> {
@@ -19,7 +20,7 @@ export default class CodeRunnerPlugin extends Plugin {
 
     this.executionManager = new ExecutionManager(this, this.outputStore);
 
-    this.registerCodeBlockProcessors();
+    this.ensureCodeBlockProcessors();
 
     this.addCommand({
       id: "run-current-runnable-block",
@@ -147,12 +148,17 @@ export default class CodeRunnerPlugin extends Plugin {
     this.outputStore = new OutputStateStore(data?.outputs ?? {});
   }
 
-  private registerCodeBlockProcessors(): void {
+  ensureCodeBlockProcessors(): void {
     const languages = Object.keys(this.settings.executorPresets);
     for (const language of languages) {
+      if (this.registeredProcessorLanguages.has(language)) {
+        continue;
+      }
+
       this.registerMarkdownCodeBlockProcessor(language, async (source, el, ctx) => {
         await this.renderRunnableCodeBlock(language, source, el, ctx);
       });
+      this.registeredProcessorLanguages.add(language);
     }
   }
 
