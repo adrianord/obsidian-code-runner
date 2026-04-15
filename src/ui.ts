@@ -39,10 +39,19 @@ export function attachRenderedBlockUI(
 
 export function renderPlainCodeBlock(container: HTMLElement, language: string, source: string): void {
   container.empty();
-  const pre = container.createEl("pre");
+  const inner = container.createDiv({ cls: "code-runner-code-inner" });
+  const lineNumbers = inner.createDiv({ cls: "code-runner-line-numbers" });
+  const lineCount = Math.max(1, source.split("\n").length);
+
+  for (let lineNumber = 1; lineNumber <= lineCount; lineNumber += 1) {
+    lineNumbers.createSpan({ text: String(lineNumber) });
+  }
+
+  const pre = inner.createEl("pre");
   const code = pre.createEl("code", { text: source });
   code.addClass(`language-${language}`);
   pre.addClass(`language-${language}`);
+  lineNumbers.setAttr("contenteditable", "false");
   pre.setAttr("contenteditable", "false");
   code.setAttr("contenteditable", "false");
   void highlightCodeBlock(code);

@@ -67,10 +67,43 @@
   background: var(--code-background);
 }
 
+.code-runner-code-inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.code-runner-line-numbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  padding: 0.85rem 0.75rem 0.85rem 0.9rem;
+  color: var(--text-faint);
+  background: color-mix(in srgb, var(--code-background) 88%, var(--background-primary));
+  border-right: 1px solid var(--background-modifier-border);
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.code-runner-line-numbers span {
+  display: block;
+  min-width: 2ch;
+}
+
 .code-runner-code pre {
   margin: 0;
   border-radius: 0;
   border: none;
+  padding: 0.85rem 1rem;
+  background: transparent;
+}
+
+.code-runner-code code {
+  display: block;
+  line-height: 1.5;
 }
 
 .code-runner-output {
