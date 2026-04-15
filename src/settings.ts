@@ -8,6 +8,9 @@ export const DEFAULT_SETTINGS: RunnerSettings = {
   maxOutputBytes: 64_000,
   autoClearOutput: true,
   persistLatestOutput: true,
+  renderedCodeRenderer: "prism",
+  renderedCodeDarkTheme: "one-dark",
+  renderedCodeLightTheme: "github-light",
   executorPresets: {
     js: "node {{file}}",
     python: "python3 {{file}}",
@@ -78,6 +81,49 @@ export class CodeRunnerSettingTab extends PluginSettingTab {
         .onChange(async (value) => {
           this.plugin.settings.persistLatestOutput = value;
           await this.plugin.savePluginData();
+        }));
+
+    new Setting(containerEl)
+      .setName("Rendered code renderer")
+      .setDesc("Choose how runnable code blocks are highlighted when rendered.")
+      .addDropdown((dropdown) => dropdown
+        .addOption("prism", "Prism (stable)")
+        .addOption("codemirror", "CodeMirror")
+        .setValue(this.plugin.settings.renderedCodeRenderer)
+        .onChange(async (value) => {
+          this.plugin.settings.renderedCodeRenderer = value as RunnerSettings["renderedCodeRenderer"];
+          await this.plugin.savePluginData();
+          this.plugin.requestRefresh();
+        }));
+
+    new Setting(containerEl)
+      .setName("Rendered code dark theme")
+      .setDesc("Theme for CodeMirror rendered code when Obsidian is in dark mode.")
+      .addDropdown((dropdown) => dropdown
+        .addOption("one-dark", "One Dark")
+        .addOption("dracula", "Dracula")
+        .addOption("nord", "Nord")
+        .addOption("tokyo-night", "Tokyo Night")
+        .addOption("github-dark", "GitHub Dark")
+        .setValue(this.plugin.settings.renderedCodeDarkTheme)
+        .onChange(async (value) => {
+          this.plugin.settings.renderedCodeDarkTheme = value as RunnerSettings["renderedCodeDarkTheme"];
+          await this.plugin.savePluginData();
+          this.plugin.requestRefresh();
+        }));
+
+    new Setting(containerEl)
+      .setName("Rendered code light theme")
+      .setDesc("Theme for CodeMirror rendered code when Obsidian is in light mode.")
+      .addDropdown((dropdown) => dropdown
+        .addOption("github-light", "GitHub Light")
+        .addOption("quietlight", "Quiet Light")
+        .addOption("xcode", "Xcode")
+        .setValue(this.plugin.settings.renderedCodeLightTheme)
+        .onChange(async (value) => {
+          this.plugin.settings.renderedCodeLightTheme = value as RunnerSettings["renderedCodeLightTheme"];
+          await this.plugin.savePluginData();
+          this.plugin.requestRefresh();
         }));
 
     const presetsInfo = containerEl.createEl("p", {

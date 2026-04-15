@@ -14,6 +14,12 @@ export interface OutputChunk {
   isStderr: boolean;
 }
 
+export type RenderedCodeRenderer = "prism" | "codemirror";
+
+export type RenderedCodeDarkTheme = "one-dark" | "dracula" | "nord" | "tokyo-night" | "github-dark";
+
+export type RenderedCodeLightTheme = "github-light" | "quietlight" | "xcode";
+
 export type RunStatus = "idle" | "running" | "success" | "error" | "stopped";
 
 export interface RunState {
@@ -33,6 +39,9 @@ export interface RunnerSettings {
   maxOutputBytes: number;
   autoClearOutput: boolean;
   persistLatestOutput: boolean;
+  renderedCodeRenderer: RenderedCodeRenderer;
+  renderedCodeDarkTheme: RenderedCodeDarkTheme;
+  renderedCodeLightTheme: RenderedCodeLightTheme;
   executorPresets: Record<string, string>;
 }
 

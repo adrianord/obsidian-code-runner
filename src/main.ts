@@ -65,6 +65,7 @@ export default class CodeRunnerPlugin extends Plugin {
 
     this.addSettingTab(new CodeRunnerSettingTab(this.app, this));
     this.registerEvent(this.outputStore.on("change", () => this.requestRefresh()));
+    this.registerEvent(this.app.workspace.on("css-change", () => this.requestRefresh()));
   }
 
   async onunload(): Promise<void> {
@@ -164,7 +165,6 @@ export default class CodeRunnerPlugin extends Plugin {
 
     const sectionInfo = ctx.getSectionInfo(el);
     if (!sectionInfo) {
-      renderPlainCodeBlock(el, language, source);
       return;
     }
 

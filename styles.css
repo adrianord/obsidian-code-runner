@@ -133,6 +133,41 @@
   line-height: 1.5;
 }
 
+.code-runner-code-cm-host {
+  min-width: 0;
+}
+
+.code-runner-code-cm .code-runner-line-numbers {
+  padding-top: 0.95rem;
+}
+
+.code-runner-cm-editor,
+.code-runner-cm-editor .cm-editor,
+.code-runner-cm-editor .cm-scroller,
+.code-runner-cm-editor .cm-content {
+  background: transparent;
+}
+
+.code-runner-cm-editor .cm-editor {
+  font-family: var(--font-monospace);
+  font-size: 0.95em;
+}
+
+.code-runner-cm-editor .cm-content {
+  caret-color: transparent;
+}
+
+.code-runner-theme-one-dark,
+.code-runner-theme-dracula,
+.code-runner-theme-nord,
+.code-runner-theme-tokyo-night,
+.code-runner-theme-github-dark,
+.code-runner-theme-github-light,
+.code-runner-theme-quietlight,
+.code-runner-theme-xcode {
+  background: transparent;
+}
+
 .code-runner-output {
   border-top: 1px solid var(--background-modifier-border);
   background: var(--background-primary);

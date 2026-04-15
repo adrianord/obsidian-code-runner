@@ -1,6 +1,19 @@
+import { EditorState, type Extension } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
+import { StreamLanguage } from "@codemirror/language";
+import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
+import { shell } from "@codemirror/legacy-modes/mode/shell";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { dracula } from "@uiw/codemirror-theme-dracula";
+import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
+import { nord } from "@uiw/codemirror-theme-nord";
+import { quietlight } from "@uiw/codemirror-theme-quietlight";
+import { tokyoNight } from "@uiw/codemirror-theme-tokyo-night";
+import { xcodeLight } from "@uiw/codemirror-theme-xcode";
 import { MarkdownRenderChild, loadPrism, setIcon, type MarkdownPostProcessorContext } from "obsidian";
 import type CodeRunnerPlugin from "./main";
-import type { RunnableBlock } from "./types";
+import type { RenderedCodeDarkTheme, RenderedCodeLightTheme, RunnableBlock } from "./types";
 
 export function attachRenderedBlockUI(
   plugin: CodeRunnerPlugin,
@@ -29,12 +42,34 @@ export function attachRenderedBlockUI(
   shieldEditorInteractions(codeSlot);
   shieldEditorInteractions(outputSlot);
 
-  renderPlainCodeBlock(codeSlot, block.lang, source);
+  let destroyCodeBlock = renderCodeBlock(plugin, codeSlot, block.lang, source);
+  let lastRenderer = plugin.settings.renderedCodeRenderer;
+  let lastDarkTheme = plugin.settings.renderedCodeDarkTheme;
+  let lastLightTheme = plugin.settings.renderedCodeLightTheme;
+  let lastDarkMode = plugin.app.isDarkMode();
+
   container.append(toolbarSlot, codeSlot, outputSlot);
 
-  const rerender = (): void => syncRenderedBlock(plugin, block, toolbarSlot, outputSlot);
+  const rerender = (): void => {
+    const rendererChanged = plugin.settings.renderedCodeRenderer !== lastRenderer;
+    const darkThemeChanged = plugin.settings.renderedCodeDarkTheme !== lastDarkTheme;
+    const lightThemeChanged = plugin.settings.renderedCodeLightTheme !== lastLightTheme;
+    const darkModeChanged = plugin.app.isDarkMode() !== lastDarkMode;
+
+    if (rendererChanged || darkThemeChanged || lightThemeChanged || darkModeChanged) {
+      destroyCodeBlock();
+      destroyCodeBlock = renderCodeBlock(plugin, codeSlot, block.lang, source);
+      lastRenderer = plugin.settings.renderedCodeRenderer;
+      lastDarkTheme = plugin.settings.renderedCodeDarkTheme;
+      lastLightTheme = plugin.settings.renderedCodeLightTheme;
+      lastDarkMode = plugin.app.isDarkMode();
+    }
+
+    syncRenderedBlock(plugin, block, toolbarSlot, outputSlot);
+  };
+
   rerender();
-  context.addChild(new RenderedBlockChild(container, plugin, rerender));
+  context.addChild(new RenderedBlockChild(container, plugin, rerender, () => destroyCodeBlock()));
 }
 
 export function renderPlainCodeBlock(container: HTMLElement, language: string, source: string): void {
@@ -55,6 +90,21 @@ export function renderPlainCodeBlock(container: HTMLElement, language: string, s
   pre.setAttr("contenteditable", "false");
   code.setAttr("contenteditable", "false");
   void highlightCodeBlock(code);
+}
+
+function renderCodeBlock(plugin: CodeRunnerPlugin, container: HTMLElement, language: string, source: string): () => void {
+  if (plugin.settings.renderedCodeRenderer === "codemirror") {
+    const languageExtension = getLanguageExtension(language);
+    if (languageExtension) {
+      const theme = plugin.app.isDarkMode()
+        ? plugin.settings.renderedCodeDarkTheme
+        : plugin.settings.renderedCodeLightTheme;
+      return renderCodeMirrorBlock(container, source, languageExtension, theme);
+    }
+  }
+
+  renderPlainCodeBlock(container, language, source);
+  return () => {};
 }
 
 function syncRenderedBlock(
@@ -150,7 +200,8 @@ class RenderedBlockChild extends MarkdownRenderChild {
   constructor(
     containerEl: HTMLElement,
     private readonly plugin: CodeRunnerPlugin,
-    private readonly rerender: () => void
+    private readonly rerender: () => void,
+    private readonly destroyCodeBlockRef: () => void
   ) {
     super(containerEl);
     this.unsubscribe = this.plugin.onOutputChange(this.rerender);
@@ -158,6 +209,7 @@ class RenderedBlockChild extends MarkdownRenderChild {
 
   onunload(): void {
     this.unsubscribe();
+    this.destroyCodeBlockRef();
   }
 }
 
@@ -208,5 +260,126 @@ async function highlightCodeBlock(code: HTMLElement): Promise<void> {
     prism.highlightElement(code);
   } catch {
     // Fall back to plain text if Prism highlighting fails.
+  }
+}
+
+function renderCodeMirrorBlock(
+  container: HTMLElement,
+  source: string,
+  languageExtension: unknown,
+  themeName: RenderedCodeDarkTheme | RenderedCodeLightTheme
+): () => void {
+  container.empty();
+  const inner = container.createDiv({ cls: `code-runner-code-inner code-runner-code-cm code-runner-theme-${themeName}` });
+  const lineNumbers = inner.createDiv({ cls: "code-runner-line-numbers" });
+  const lineCount = Math.max(1, source.split("\n").length);
+
+  for (let lineNumber = 1; lineNumber <= lineCount; lineNumber += 1) {
+    lineNumbers.createSpan({ text: String(lineNumber) });
+  }
+
+  const host = inner.createDiv({ cls: "code-runner-code-cm-host" });
+  lineNumbers.setAttr("contenteditable", "false");
+  host.setAttr("contenteditable", "false");
+
+  const theme = getCodeMirrorTheme(themeName);
+  const view = new EditorView({
+    state: EditorState.create({
+      doc: source,
+      extensions: [
+        EditorState.readOnly.of(true),
+        EditorView.editable.of(false),
+        EditorView.lineWrapping,
+        EditorView.theme({
+          "&": {
+            backgroundColor: "transparent"
+          },
+          ".cm-editor": {
+            backgroundColor: "transparent"
+          },
+          ".cm-scroller": {
+            fontFamily: "var(--font-monospace)",
+            lineHeight: "1.5"
+          },
+          ".cm-content": {
+            padding: "0.85rem 1rem"
+          },
+          ".cm-line": {
+            padding: "0"
+          },
+          ".cm-gutters": {
+            display: "none"
+          },
+          ".cm-activeLine": {
+            backgroundColor: "transparent"
+          },
+          ".cm-focused": {
+            outline: "none"
+          },
+          ".cm-selectionBackground, ::selection": {
+            backgroundColor: "transparent !important"
+          },
+          ".cm-cursor, .cm-dropCursor": {
+            display: "none"
+          }
+        }),
+        theme.extension,
+        languageExtension as never
+      ]
+    }),
+    parent: host
+  });
+
+  view.dom.addClass("code-runner-cm-editor");
+  view.dom.setAttr("contenteditable", "false");
+
+  return () => view.destroy();
+}
+
+function getLanguageExtension(language: string): unknown | null {
+  switch (language.toLowerCase()) {
+    case "python":
+    case "py":
+      return python();
+    case "javascript":
+    case "js":
+      return javascript();
+    case "typescript":
+    case "ts":
+      return javascript({ typescript: true });
+    case "jsx":
+      return javascript({ jsx: true });
+    case "tsx":
+      return javascript({ typescript: true, jsx: true });
+    case "json":
+      return javascript();
+    case "bash":
+    case "sh":
+    case "shell":
+      return StreamLanguage.define(shell);
+    default:
+      return null;
+  }
+}
+
+function getCodeMirrorTheme(themeName: RenderedCodeDarkTheme | RenderedCodeLightTheme): { extension: Extension } {
+  switch (themeName) {
+    case "dracula":
+      return { extension: dracula };
+    case "nord":
+      return { extension: nord };
+    case "tokyo-night":
+      return { extension: tokyoNight };
+    case "github-dark":
+      return { extension: githubDark };
+    case "github-light":
+      return { extension: githubLight };
+    case "quietlight":
+      return { extension: quietlight };
+    case "xcode":
+      return { extension: xcodeLight };
+    case "one-dark":
+    default:
+      return { extension: oneDark };
   }
 }
