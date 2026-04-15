@@ -1,0 +1,105 @@
+.code-runner-container {
+  border-radius: var(--code-radius, 8px);
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border-hover);
+  background: var(--background-primary);
+  margin: 0.75rem 0 1rem;
+}
+
+.code-runner-toolbar-slot,
+.code-runner-output-slot {
+  display: block;
+}
+
+.code-runner-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--background-primary);
+  padding: 0.2rem 0.9rem;
+  min-height: 40px;
+}
+
+.code-runner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.code-runner-run-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.code-runner-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.code-runner-icon-button:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.code-runner-icon-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.code-runner-lang-label {
+  color: var(--text-muted);
+  font-family: var(--font-interface);
+  font-size: 0.9em;
+}
+
+.code-runner-code {
+  background: var(--code-background);
+}
+
+.code-runner-code pre {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+}
+
+.code-runner-output {
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.code-runner-output.is-collapsed {
+  display: none;
+}
+
+.code-runner-output-content {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.95em;
+  background: var(--background-primary);
+}
+
+.code-runner-output-content .is-stderr {
+  color: var(--text-error);
+}
+
+.code-runner-output-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 1rem 0.65rem;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}

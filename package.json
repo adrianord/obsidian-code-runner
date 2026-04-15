@@ -1,0 +1,21 @@
+{
+  "name": "obsidian-code-runner",
+  "version": "0.1.0",
+  "description": "Lightweight notebook-style code execution for Obsidian Live Preview.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "esbuild": "0.25.5",
+    "tslib": "2.7.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "obsidian": "latest"
+  }
+}

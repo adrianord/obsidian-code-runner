@@ -1,0 +1,9 @@
+{
+  "id": "code-runner",
+  "name": "Code Runner",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Run lightweight notebook-style code blocks directly in Obsidian Live Preview.",
+  "author": "OpenCode",
+  "isDesktopOnly": true
+}
