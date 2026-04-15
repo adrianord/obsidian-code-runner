@@ -1,8 +1,9 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { FileSystemAdapter, Notice } from "obsidian";
+import { delimiter, join } from "node:path";
+import { env } from "node:process";
+import { FileSystemAdapter } from "obsidian";
 import type CodeRunnerPlugin from "./main";
 import type { RunnableBlock, RunState } from "./types";
 import { createIdleState, OutputStateStore } from "./state";
@@ -41,6 +42,7 @@ export class ExecutionManager {
     const command = commandTemplate.split("{{file}}").join(quoteForShell(tempFile));
     const process = spawn(command, {
       cwd: this.getWorkingDirectory(),
+      env: this.getSpawnEnvironment(),
       shell: true
     });
 
@@ -177,6 +179,16 @@ export class ExecutionManager {
     }
 
     return undefined;
+  }
+
+  private getSpawnEnvironment(): NodeJS.ProcessEnv {
+    const currentPath = env.PATH ?? "";
+    const extraPath = this.plugin.settings.extraPathEntries.join(delimiter);
+
+    return {
+      ...env,
+      PATH: extraPath ? `${extraPath}${delimiter}${currentPath}` : currentPath
+    };
   }
 }
 

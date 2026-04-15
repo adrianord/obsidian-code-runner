@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS: RunnerSettings = {
   maxOutputBytes: 64_000,
   autoClearOutput: true,
   persistLatestOutput: true,
+  extraPathEntries: [],
   renderedCodeRenderer: "codemirror",
   renderedCodeDarkTheme: "github-dark",
   renderedCodeLightTheme: "github-light",
@@ -70,6 +71,25 @@ export class CodeRunnerSettingTab extends PluginSettingTab {
           this.plugin.settings.persistLatestOutput = value;
           await this.plugin.savePluginData();
         }));
+
+    const pathInfo = containerEl.createEl("p", {
+      text: "Extra PATH entries are prepended when running code blocks. Add one directory per line, for example /usr/local/bin or /opt/homebrew/bin."
+    });
+    pathInfo.addClass("setting-item-description");
+
+    const pathField = containerEl.createEl("textarea", {
+      text: this.plugin.settings.extraPathEntries.join("\n")
+    });
+    pathField.rows = 4;
+    pathField.style.width = "100%";
+
+    pathField.addEventListener("change", async () => {
+      this.plugin.settings.extraPathEntries = pathField.value
+        .split("\n")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      await this.plugin.savePluginData();
+    });
 
     new Setting(containerEl)
       .setName("Rendered code renderer")

@@ -38,6 +38,7 @@ export interface RunnerSettings {
   maxOutputBytes: number;
   autoClearOutput: boolean;
   persistLatestOutput: boolean;
+  extraPathEntries: string[];
   renderedCodeRenderer: RenderedCodeRenderer;
   renderedCodeDarkTheme: RenderedCodeDarkTheme;
   renderedCodeLightTheme: RenderedCodeLightTheme;
