@@ -129,7 +129,7 @@ export function renderToolbar(plugin: CodeRunnerPlugin, block: RunnableBlock): H
 
   const state = plugin.outputStore.get(block.id);
   const isRunning = plugin.executionManager.isRunning(block.id);
-  const canRun = plugin.settings.executionEnabled && !!plugin.settings.executorPresets[block.lang];
+  const canRun = !!plugin.settings.executorPresets[block.lang];
   const hasOutput = state.chunks.length > 0 || !!state.errorMessage;
 
   const runButton = createIconButton(isRunning ? "square" : "play", isRunning ? "Stop block" : "Run block");

@@ -26,11 +26,6 @@ export class ExecutionManager {
   }
 
   async runBlock(block: RunnableBlock): Promise<void> {
-    if (!this.plugin.settings.executionEnabled) {
-      new Notice("Code Runner is disabled in settings.");
-      return;
-    }
-
     const commandTemplate = this.plugin.settings.executorPresets[block.lang];
     if (!commandTemplate) {
       this.store.set(block.id, errorState(`No executor preset configured for '${block.lang}'.`));

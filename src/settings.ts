@@ -3,13 +3,12 @@ import type CodeRunnerPlugin from "./main";
 import type { RunnerSettings } from "./types";
 
 export const DEFAULT_SETTINGS: RunnerSettings = {
-  executionEnabled: false,
   timeoutMs: 30_000,
   maxOutputBytes: 64_000,
   autoClearOutput: true,
   persistLatestOutput: true,
-  renderedCodeRenderer: "prism",
-  renderedCodeDarkTheme: "one-dark",
+  renderedCodeRenderer: "codemirror",
+  renderedCodeDarkTheme: "github-dark",
   renderedCodeLightTheme: "github-light",
   executorPresets: {
     js: "node {{file}}",
@@ -27,17 +26,6 @@ export class CodeRunnerSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-
-    new Setting(containerEl)
-      .setName("Enable code execution")
-      .setDesc("Local execution is disabled by default.")
-      .addToggle((toggle) => toggle
-        .setValue(this.plugin.settings.executionEnabled)
-        .onChange(async (value) => {
-          this.plugin.settings.executionEnabled = value;
-          await this.plugin.savePluginData();
-          this.plugin.requestRefresh();
-        }));
 
     new Setting(containerEl)
       .setName("Execution timeout")

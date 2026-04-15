@@ -34,7 +34,6 @@ export interface RunState {
 }
 
 export interface RunnerSettings {
-  executionEnabled: boolean;
   timeoutMs: number;
   maxOutputBytes: number;
   autoClearOutput: boolean;
