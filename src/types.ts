@@ -14,6 +14,11 @@ export interface OutputChunk {
   isStderr: boolean;
 }
 
+export interface RunnerPreset {
+  languages: string[];
+  command: string;
+}
+
 export type RenderedCodeRenderer = "prism" | "codemirror";
 
 export type RenderedCodeDarkTheme = "one-dark" | "dracula" | "nord" | "tokyo-night" | "github-dark";
@@ -42,10 +47,10 @@ export interface RunnerSettings {
   renderedCodeRenderer: RenderedCodeRenderer;
   renderedCodeDarkTheme: RenderedCodeDarkTheme;
   renderedCodeLightTheme: RenderedCodeLightTheme;
-  executorPresets: Record<string, string>;
+  runnerPresets: RunnerPreset[];
 }
 
 export interface PersistedData {
-  settings?: Partial<RunnerSettings>;
+  settings?: Partial<RunnerSettings> & { executorPresets?: Record<string, string> };
   outputs?: Record<string, RunState>;
 }

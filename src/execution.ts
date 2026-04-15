@@ -27,7 +27,7 @@ export class ExecutionManager {
   }
 
   async runBlock(block: RunnableBlock): Promise<void> {
-    const commandTemplate = this.plugin.settings.executorPresets[block.lang];
+    const commandTemplate = this.plugin.getExecutorCommand(block.lang);
     if (!commandTemplate) {
       this.store.set(block.id, errorState(`No executor preset configured for '${block.lang}'.`));
       return;

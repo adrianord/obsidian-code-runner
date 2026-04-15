@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type CodeRunnerPlugin from "./main";
-import type { RunnerSettings } from "./types";
+import type { RunnerPreset, RunnerSettings } from "./types";
 
 export const DEFAULT_SETTINGS: RunnerSettings = {
   timeoutMs: 30_000,
@@ -11,12 +11,11 @@ export const DEFAULT_SETTINGS: RunnerSettings = {
   renderedCodeRenderer: "codemirror",
   renderedCodeDarkTheme: "github-dark",
   renderedCodeLightTheme: "github-light",
-  executorPresets: {
-    js: "node {{file}}",
-    python: "python3 {{file}}",
-    bash: "/bin/bash {{file}}",
-    sh: "/bin/sh {{file}}"
-  }
+  runnerPresets: [
+    { languages: ["js"], command: "node {{file}}" },
+    { languages: ["python"], command: "python3 {{file}}" },
+    { languages: ["bash", "sh"], command: "/bin/bash {{file}}" }
+  ]
 };
 
 export class CodeRunnerSettingTab extends PluginSettingTab {
@@ -72,25 +71,6 @@ export class CodeRunnerSettingTab extends PluginSettingTab {
           await this.plugin.savePluginData();
         }));
 
-    const pathInfo = containerEl.createEl("p", {
-      text: "Extra PATH entries are prepended when running code blocks. Add one directory per line, for example /usr/local/bin or /opt/homebrew/bin."
-    });
-    pathInfo.addClass("setting-item-description");
-
-    const pathField = containerEl.createEl("textarea", {
-      text: this.plugin.settings.extraPathEntries.join("\n")
-    });
-    pathField.rows = 4;
-    pathField.style.width = "100%";
-
-    pathField.addEventListener("change", async () => {
-      this.plugin.settings.extraPathEntries = pathField.value
-        .split("\n")
-        .map((entry) => entry.trim())
-        .filter(Boolean);
-      await this.plugin.savePluginData();
-    });
-
     new Setting(containerEl)
       .setName("Rendered code renderer")
       .setDesc("Choose how runnable code blocks are highlighted when rendered.")
@@ -134,31 +114,106 @@ export class CodeRunnerSettingTab extends PluginSettingTab {
           this.plugin.requestRefresh();
         }));
 
-    const presetsInfo = containerEl.createEl("p", {
-      text: "Executor presets are a JSON object mapping language names to shell commands. Use {{file}} where the temporary snippet file should be inserted."
-    });
-    presetsInfo.addClass("setting-item-description");
+    const pathTitle = containerEl.createEl("h3", { text: "Environment PATH" });
+    pathTitle.addClass("code-runner-settings-section-title");
 
-    const presetsField = containerEl.createEl("textarea", {
-      text: JSON.stringify(this.plugin.settings.executorPresets, null, 2)
-    });
-    presetsField.rows = 8;
-    presetsField.style.width = "100%";
+    const pathSectionBody = containerEl.createDiv({ cls: "code-runner-settings-section-body" });
 
-    const presetsError = containerEl.createEl("p");
-    presetsError.addClass("setting-item-description");
-
-    presetsField.addEventListener("change", async () => {
-      try {
-        const parsed = JSON.parse(presetsField.value) as RunnerSettings["executorPresets"];
-        this.plugin.settings.executorPresets = parsed;
-        presetsError.setText("");
-        this.plugin.ensureCodeBlockProcessors();
-        await this.plugin.savePluginData();
-        this.plugin.requestRefresh();
-      } catch (error) {
-        presetsError.setText(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
-      }
+    const pathInfo = pathSectionBody.createEl("p", {
+      text: "Extra PATH entries are prepended when running code blocks. Add one directory per line, for example /usr/local/bin or /opt/homebrew/bin."
     });
+    pathInfo.addClass("setting-item-description");
+
+    const pathField = pathSectionBody.createEl("textarea", {
+      text: this.plugin.settings.extraPathEntries.join("\n")
+    });
+    pathField.rows = 4;
+    pathField.style.width = "100%";
+
+    pathField.addEventListener("change", async () => {
+      this.plugin.settings.extraPathEntries = pathField.value
+        .split("\n")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      await this.plugin.savePluginData();
+    });
+
+    const runnersTitle = containerEl.createEl("h3", { text: "Runners" });
+    runnersTitle.addClass("code-runner-settings-section-title");
+
+    const runnersSectionBody = containerEl.createDiv({ cls: "code-runner-settings-section-body" });
+
+    const runnersInfo = runnersSectionBody.createEl("p", {
+      text: "Configure runnable languages and their commands. Add comma-separated languages to share one executable across multiple fence types. Use {{file}} where the temporary snippet file should be inserted."
+    });
+    runnersInfo.addClass("setting-item-description");
+
+    const presetsContainer = runnersSectionBody.createDiv({ cls: "code-runner-settings-runners" });
+
+    const renderRunnerPresets = (): void => {
+      presetsContainer.empty();
+
+      this.plugin.settings.runnerPresets.forEach((preset, index) => {
+        const row = presetsContainer.createDiv({ cls: "code-runner-settings-runner-row" });
+
+        const languagesInput = row.createEl("input", { type: "text" });
+        languagesInput.placeholder = "js, ts, jsx";
+        languagesInput.value = preset.languages.join(", ");
+        languagesInput.addClass("code-runner-settings-runner-languages");
+
+        const commandInput = row.createEl("input", { type: "text" });
+        commandInput.placeholder = "node {{file}}";
+        commandInput.value = preset.command;
+        commandInput.addClass("code-runner-settings-runner-command");
+
+        const removeButton = row.createEl("button", { text: "-" });
+        removeButton.type = "button";
+        removeButton.addClass("code-runner-settings-runner-button");
+        removeButton.ariaLabel = "Remove runner";
+        removeButton.title = "Remove runner";
+
+        const updatePreset = async (): Promise<void> => {
+          this.plugin.settings.runnerPresets[index] = normalizeRunnerPreset({
+            languages: languagesInput.value.split(","),
+            command: commandInput.value
+          });
+          this.plugin.ensureCodeBlockProcessors();
+          await this.plugin.savePluginData();
+          this.plugin.requestRefresh();
+        };
+
+        languagesInput.addEventListener("change", () => {
+          void updatePreset();
+        });
+        commandInput.addEventListener("change", () => {
+          void updatePreset();
+        });
+        removeButton.addEventListener("click", () => {
+          this.plugin.settings.runnerPresets.splice(index, 1);
+          void this.plugin.savePluginData();
+          this.plugin.requestRefresh();
+          renderRunnerPresets();
+        });
+      });
+    };
+
+    const addRunnerButton = runnersSectionBody.createEl("button", { text: "+" });
+    addRunnerButton.type = "button";
+    addRunnerButton.addClass("code-runner-settings-runner-button", "code-runner-settings-runner-add-button");
+    addRunnerButton.ariaLabel = "Add runner";
+    addRunnerButton.title = "Add runner";
+    addRunnerButton.addEventListener("click", () => {
+      this.plugin.settings.runnerPresets.push({ languages: [], command: "" });
+      renderRunnerPresets();
+    });
+
+    renderRunnerPresets();
   }
+}
+
+function normalizeRunnerPreset(preset: RunnerPreset): RunnerPreset {
+  return {
+    languages: preset.languages.map((language) => language.trim()).filter(Boolean),
+    command: preset.command.trim()
+  };
 }

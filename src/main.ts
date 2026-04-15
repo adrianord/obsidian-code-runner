@@ -137,19 +137,21 @@ export default class CodeRunnerPlugin extends Plugin {
 
   private async loadPluginData(): Promise<void> {
     const data = (await this.loadData()) as PersistedData | null;
+    const runnerPresets = data?.settings?.runnerPresets?.map((preset) => ({
+      languages: preset.languages.map((language) => language.trim()).filter(Boolean),
+      command: preset.command.trim()
+    })) ?? migrateExecutorPresets(data?.settings?.executorPresets);
+
     this.settings = {
       ...DEFAULT_SETTINGS,
       ...data?.settings,
-      executorPresets: {
-        ...DEFAULT_SETTINGS.executorPresets,
-        ...(data?.settings?.executorPresets ?? {})
-      }
+      runnerPresets: runnerPresets.length > 0 ? runnerPresets : DEFAULT_SETTINGS.runnerPresets
     };
     this.outputStore = new OutputStateStore(data?.outputs ?? {});
   }
 
   ensureCodeBlockProcessors(): void {
-    const languages = Object.keys(this.settings.executorPresets);
+    const languages = this.getConfiguredLanguages();
     for (const language of languages) {
       if (this.registeredProcessorLanguages.has(language)) {
         continue;
@@ -163,6 +165,11 @@ export default class CodeRunnerPlugin extends Plugin {
   }
 
   private async renderRunnableCodeBlock(language: string, source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<void> {
+    if (!this.getExecutorCommand(language)) {
+      renderPlainCodeBlock(el, language, source);
+      return;
+    }
+
     const fileText = await this.getSourceText(ctx.sourcePath);
     if (!fileText || !hasCodeRunnerFrontmatter(fileText)) {
       renderPlainCodeBlock(el, language, source);
@@ -215,4 +222,43 @@ export default class CodeRunnerPlugin extends Plugin {
 
     return findBlockAtLine(text, sourcePath, editor.getCursor().line);
   }
+
+  getExecutorCommand(language: string): string | null {
+    const normalizedLanguage = language.trim().toLowerCase();
+    for (const preset of this.settings.runnerPresets) {
+      if (!preset.command) {
+        continue;
+      }
+
+      if (preset.languages.some((presetLanguage) => presetLanguage.toLowerCase() === normalizedLanguage)) {
+        return preset.command;
+      }
+    }
+
+    return null;
+  }
+
+  private getConfiguredLanguages(): string[] {
+    const languages = new Set<string>();
+    this.settings.runnerPresets.forEach((preset) => {
+      preset.languages.forEach((language) => {
+        const normalizedLanguage = language.trim().toLowerCase();
+        if (normalizedLanguage) {
+          languages.add(normalizedLanguage);
+        }
+      });
+    });
+    return Array.from(languages);
+  }
+}
+
+function migrateExecutorPresets(executorPresets: Record<string, string> | undefined): RunnerSettings["runnerPresets"] {
+  if (!executorPresets) {
+    return [];
+  }
+
+  return Object.entries(executorPresets).map(([language, command]) => ({
+    languages: [language],
+    command
+  }));
 }
