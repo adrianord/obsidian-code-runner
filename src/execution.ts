@@ -43,19 +43,6 @@ export class ExecutionManager {
     const tempFile = join(tempDir, `snippet.${block.lang}`);
     await writeFile(tempFile, block.code, "utf8");
 
-    const state: RunState = {
-      status: "running",
-      chunks: [],
-      truncated: false,
-      startedAt: Date.now(),
-      endedAt: null,
-      durationMs: null,
-      exitCode: null,
-      errorMessage: null
-    };
-
-    this.store.set(block.id, state);
-
     const command = commandTemplate.split("{{file}}").join(quoteForShell(tempFile));
     const process = spawn(command, {
       cwd: this.getWorkingDirectory(),
@@ -68,6 +55,20 @@ export class ExecutionManager {
       timeoutId: null
     };
     this.activeRuns.set(block.id, activeRun);
+    this.plugin.requestRefresh();
+
+    const state: RunState = {
+      status: "running",
+      chunks: [],
+      truncated: false,
+      startedAt: Date.now(),
+      endedAt: null,
+      durationMs: null,
+      exitCode: null,
+      errorMessage: null
+    };
+
+    this.store.set(block.id, state);
 
     const appendChunk = (text: string, isStderr: boolean): void => {
       if (!text) {
@@ -170,6 +171,7 @@ export class ExecutionManager {
     }
 
     this.activeRuns.delete(blockId);
+    this.plugin.requestRefresh();
     await rm(activeRun.tempDir, { recursive: true, force: true });
   }
 
