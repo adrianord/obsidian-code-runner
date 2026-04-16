@@ -169,3 +169,7 @@ npm run dev
 - A block is only treated as runnable when the note has Code Runner frontmatter enabled.
 - If a language is added in settings, it becomes runnable without reloading the plugin.
 - If a command cannot be found, check the runner command and your `Environment PATH` settings.
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
