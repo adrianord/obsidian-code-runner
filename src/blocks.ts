@@ -21,7 +21,14 @@ export function hasCodeRunnerFrontmatter(text: string): boolean {
     }
 
     const normalized = line.trim().toLowerCase();
-    if (normalized === "code-runner: true" || normalized === "coderunner: true") {
+    if (
+      normalized === "code-runner: true" ||
+      normalized === 'code-runner: "true"' ||
+      normalized === "code-runner: 'true'" ||
+      normalized === "coderunner: true" ||
+      normalized === 'coderunner: "true"' ||
+      normalized === "coderunner: 'true'"
+    ) {
       return true;
     }
   }
