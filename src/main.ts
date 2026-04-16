@@ -82,6 +82,18 @@ export default class CodeRunnerPlugin extends Plugin {
     return this.app.workspace.getActiveFile()?.path ?? null;
   }
 
+  focusSourceLine(sourcePath: string, line: number, ch = 0): boolean {
+    const activeFile = this.app.workspace.getActiveFile();
+    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (activeFile?.path !== sourcePath || !activeView?.editor) {
+      return false;
+    }
+
+    activeView.editor.setCursor({ line, ch });
+    activeView.editor.focus();
+    return true;
+  }
+
   onOutputChange(callback: () => void): () => void {
     this.refreshCallbacks.add(callback);
     return () => this.refreshCallbacks.delete(callback);

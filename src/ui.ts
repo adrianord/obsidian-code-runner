@@ -39,8 +39,8 @@ export function attachRenderedBlockUI(
 
   shieldEditorInteractions(container);
   shieldEditorInteractions(toolbarSlot);
-  shieldEditorInteractions(codeSlot);
   shieldEditorInteractions(outputSlot);
+  bindCodeSlotNavigation(plugin, codeSlot, block);
 
   let destroyCodeBlock = renderCodeBlock(plugin, codeSlot, block.lang, source);
   let lastRenderer = plugin.settings.renderedCodeRenderer;
@@ -236,6 +236,35 @@ function shieldEditorInteractions(element: HTMLElement): void {
   element.addEventListener("mousedown", stopAndPrevent);
   element.addEventListener("mouseup", stop);
   element.addEventListener("click", stop);
+}
+
+function bindCodeSlotNavigation(plugin: CodeRunnerPlugin, codeSlot: HTMLElement, block: RunnableBlock): void {
+  codeSlot.addEventListener("mousedown", (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const targetLine = getClickedSourceLine(codeSlot, block, event);
+    plugin.focusSourceLine(block.sourcePath, targetLine);
+  });
+
+  codeSlot.addEventListener("click", (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+}
+
+function getClickedSourceLine(codeSlot: HTMLElement, block: RunnableBlock, event: MouseEvent): number {
+  const firstCodeLine = block.startLine + 1;
+  const codeLineCount = Math.max(1, block.code.split("\n").length);
+  const rect = codeSlot.getBoundingClientRect();
+  if (rect.height <= 0) {
+    return firstCodeLine;
+  }
+
+  const offsetY = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+  const ratio = rect.height === 0 ? 0 : offsetY / rect.height;
+  const clickedLineOffset = Math.min(codeLineCount - 1, Math.floor(ratio * codeLineCount));
+  return firstCodeLine + clickedLineOffset;
 }
 
 function formatLanguageLabel(lang: string): string {
